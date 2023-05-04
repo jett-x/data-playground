@@ -1,8 +1,8 @@
 # data-playground
-
-### easy-es-data
+> 数据游乐场：存储，传输，检索，分析......
+## module-1: easy-es-data
 > 使用easy-es操作elasticsearch
-#### connConfig.yml
+### 1.connConfig.yml
 > es连接信息在此配置
 ```yaml
 easy-es:
