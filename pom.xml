@@ -6,6 +6,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>easy-es-data</module>
+        <module>user-action-process</module>
     </modules>
     <parent>
         <artifactId>ninesp-parent</artifactId>
