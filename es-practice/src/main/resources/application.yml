@@ -1,0 +1,8 @@
+server:
+  port: 8080
+spring:
+  config:
+    import: optional:file:/data/playground/connConfig.yml #敏感或按环境变化的配置
+  datasource:
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
