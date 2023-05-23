@@ -9,7 +9,7 @@
 package com.ninesp.practice.dal.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.ninesp.practice.dal.entity.RidingOrder;
+import com.ninesp.practice.dal.entity.RidingOrderDO;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -17,5 +17,5 @@ import org.apache.ibatis.annotations.Mapper;
  * @date 2023/5/22
  */
 @Mapper
-public interface RidingOrderMapper extends BaseMapper<RidingOrder> {
+public interface RidingOrderMapper extends BaseMapper<RidingOrderDO> {
 }

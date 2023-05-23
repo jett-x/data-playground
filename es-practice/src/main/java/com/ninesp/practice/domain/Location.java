@@ -6,40 +6,25 @@
  * Side Public License, v 1.
  */
 
-package com.ninesp.practice.dal.entity;
+package com.ninesp.practice.domain;
 
-import com.baomidou.mybatisplus.annotation.TableName;
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 /**
- * @author ninesp
- * @date 2023/5/22
+ * @author chenjun
+ * @since 2023/5/23
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TableName("riding_order")
-public class RidingOrder {
+public class Location implements Serializable {
 
-    private Integer id;
+    private Double lat;
 
-    private Integer orderId;
-
-    private Integer userId;
-
-    private Integer bikeId;
-
-    private Integer bikeType;
-
-    private LocalDateTime startTime;
-
-    private String startLoc;
-
-    private String endLoc;
+    private Double lon;
 }

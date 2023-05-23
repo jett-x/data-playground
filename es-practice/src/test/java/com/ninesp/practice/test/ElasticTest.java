@@ -8,12 +8,20 @@
 
 package com.ninesp.practice.test;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.ninesp.practice.dal.entity.RidingOrderDO;
+import com.ninesp.practice.dal.mapper.RidingOrderMapper;
+import com.ninesp.practice.domain.Location;
+import com.ninesp.practice.domain.RidingOrder;
+import com.ninesp.practice.util.GeoHashConverter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Resource;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -31,6 +39,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.CollectionUtils;
 
 /**
  * @author chenjun
@@ -39,25 +48,35 @@ import org.junit.jupiter.api.Test;
 public class ElasticTest extends AbstractAppTest{
     @Resource
     private RestHighLevelClient client;
+    @Resource
+    private RidingOrderMapper ridingOrderMapper;
+    @Resource
+    private GeoHashConverter geoHashConverter;
     @Test
     public void testRawCreateIndex() throws IOException {
-        CreateIndexRequest request = new CreateIndexRequest("movies1");
+        CreateIndexRequest request = new CreateIndexRequest("riding_order");
         request.mapping("{\n"
             + "    \"properties\": {\n"
-            + "      \"title\":{\n"
-            + "        \"type\": \"text\"\n"
+            + "      \"userId\":{\n"
+            + "        \"type\": \"integer\"\n"
             + "      },\n"
-            + "      \"director\":{\n"
-            + "        \"type\": \"text\"\n"
+            + "      \"orderId\":{\n"
+            + "        \"type\": \"integer\"\n"
             + "      },\n"
-            + "      \"actors\":{\n"
-            + "        \"type\": \"text\"\n"
+            + "      \"bikeId\":{\n"
+            + "        \"type\": \"integer\"\n"
             + "      },\n"
-            + "      \"release_date\":{\n"
+            + "      \"bikeType\":{\n"
+            + "        \"type\": \"integer\"\n"
+            + "      },\n"
+            + "      \"startTime\":{\n"
             + "        \"type\": \"date\"\n"
             + "      },\n"
-            + "      \"rating\":{\n"
-            + "        \"type\": \"float\"\n"
+            + "      \"startLoc\":{\n"
+            + "        \"type\": \"geo_point\"\n"
+            + "      },\n"
+            + "      \"endLoc\":{\n"
+            + "        \"type\": \"geo_point\"\n"
             + "      }\n"
             + "    }\n"
             + "  }", XContentType.JSON);
@@ -67,15 +86,34 @@ public class ElasticTest extends AbstractAppTest{
 
     @Test
     public void testRawBulk() throws IOException {
-        BulkRequest bulkRequest = new BulkRequest();
-        List<String> lines = Files.readAllLines(Paths.get("/pathToLocal/movies.json"));
+        boolean hasNext = true;
+        Integer start = 63780;
+        while (hasNext) {
+            List<RidingOrderDO> orders = ridingOrderMapper.selectList(
+                new QueryWrapper<RidingOrderDO>().gt("id", start).last("limit 1000"));
+            if (CollectionUtils.isEmpty(orders)) {
+                hasNext = false;
+                break;
+            }
+            BulkRequest bulkRequest = new BulkRequest();
+            for (RidingOrderDO order : orders) {
+                RidingOrder ridingOrder = BeanUtil.copyProperties(order, RidingOrder.class, "startLoc", "endLoc");
+                double[] s = geoHashConverter.decode(order.getStartLoc());
+                double[] e = geoHashConverter.decode(order.getEndLoc());
+                ridingOrder.setStartLoc(Location.builder()
+                        .lat(s[0]).lon(s[1])
+                    .build());
+                ridingOrder.setEndLoc(Location.builder()
+                        .lat(e[0]).lon(e[1])
+                    .build());
 
-        for (String line : lines) {
-            JSONObject data = JSON.parseObject(line);
-            bulkRequest.add(new IndexRequest("movies1").source(data));
+                bulkRequest.add(
+                    new IndexRequest("riding_order").source(JSON.parseObject(JSON.toJSONString(ridingOrder))));
+                start = order.getId();
+            }
+            BulkResponse response = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+            System.out.println(response.status().name());
         }
-        BulkResponse response = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-        System.out.println(response);
     }
 
     @Test
