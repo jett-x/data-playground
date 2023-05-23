@@ -10,12 +10,14 @@ package com.ninesp.practice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.stereotype.Component;
 
 /**
  * @author ninesp
  * @date 2023/5/22
  */
-@SpringBootApplication(scanBasePackages = "com.ninesp.practice.config")
+@SpringBootApplication(scanBasePackages = "com.ninesp.practice")
 public class EsPracticeApp {
     public static void main(String[] args) {
         SpringApplication.run(EsPracticeApp.class, args);
