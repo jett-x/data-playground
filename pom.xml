@@ -5,8 +5,6 @@
     <modelVersion>4.0.0</modelVersion>
     <packaging>pom</packaging>
     <modules>
-        <module>easy-es-data</module>
-        <module>user-action-process</module>
         <module>es-practice</module>
     </modules>
     <parent>
