@@ -25,11 +25,16 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogram;
+import org.elasticsearch.search.aggregations.bucket.range.GeoDistanceAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.elasticsearch.search.sort.FieldSortBuilder;
@@ -159,6 +164,39 @@ public class ElasticTest extends AbstractAppTest{
         // 处理搜索结果
         for (SearchHit hit : searchResponse.getHits().getHits()) {
             System.out.println(hit.getSourceAsString());
+        }
+    }
+
+    public void aggregateWithinDistance(String index, double lat, double lon, double distance, DistanceUnit unit)
+        throws IOException {
+        SearchRequest searchRequest = new SearchRequest(index);
+
+        // 构建查询
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.filter(QueryBuilders.geoDistanceQuery("location").point(lat, lon).distance(distance, unit));
+        sourceBuilder.query(boolQueryBuilder);
+
+        // 构建聚合查询
+        GeoDistanceAggregationBuilder geoAgg =
+            AggregationBuilders.geoDistance("agg", new GeoPoint(lat, lon)).unit(DistanceUnit.KILOMETERS)
+                .addUnboundedTo(200) // 聚合到的距离桶最大值
+                .field("location").addRange(0, 50).addRange(50, 100).addRange(100, 200)
+                .subAggregation(AggregationBuilders.avg("avg_price").field("price")); // 在每个距离桶内聚合 price 字段的平均值
+
+        // 设置聚合查询请求
+        sourceBuilder.aggregation(geoAgg);
+
+        searchRequest.source(sourceBuilder);
+
+        // 执行搜索
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+        // 处理聚合结果
+        ParsedDateHistogram aggs = searchResponse.getAggregations().get("agg");
+        for (Histogram.Bucket bucket : aggs.getBuckets()) {
+            System.out.println("Bucket key: " + bucket.getKeyAsString() + ", doc count: " + bucket.getDocCount());
+            System.out.println("Avg price in bucket: " + bucket.getAggregations().get("avg_price").getMetadata());
         }
     }
 }
